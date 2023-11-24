@@ -21,8 +21,8 @@ framerate = 150
 class Circle:
     def __init__(self):
         self.pos = [0, 0]
-        self.pos[0] = random.uniform(0.3, 0.7) * 800
-        self.pos[1] = random.uniform(0.3, 0.7) * 600
+        self.pos[0] = random.uniform(0.3, 0.7) * height
+        self.pos[1] = random.uniform(0.3, 0.7) * width
 
         self.velocity = [random.uniform(0, 10) - 5, random.uniform(0, 10) - 5]
 #---------------------------------
