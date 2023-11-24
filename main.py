@@ -3,8 +3,8 @@ import random
 import math
 from sys import exit
 
-height = 1500
-width = 800
+height = 1900
+width = 1030
 
 pygame.init()
 screen = pygame.display.set_mode((height, width))
