@@ -2,8 +2,8 @@ import pygame
 import random
 from sys import exit
 
-height = 1920
-width = 1000
+height = 1500
+width = 800
 
 pygame.init()
 screen = pygame.display.set_mode((height, width))
@@ -12,19 +12,44 @@ pygame.display.set_caption("PSEMO's Game")
 clock = pygame.time.Clock()
 
 circleSize = 20
-
 circleSizeSqrd = circleSize * circleSize * 4
 
 framerate = 150
 
+particles = []
+
+class Particle:
+    def __init__(self):
+        self.pos = [0, 0]
+        self.velocity = [0, 0]
+        self.duration = 0
+        self.timer = 0
+        self.R = 0
+        self.G = 0
+        self.B = 0
+#---------------------------------
+def createCorpse(corpsePos, corpseVelo, projectileVelo):
+    x = 0
+    while x < 20:
+        x += 1
+        temp = Particle()
+        temp.pos = list(corpsePos)
+        temp.velocity = [_random(projectileVelo[0], corpseVelo[0] + projectileVelo[0]),
+                         _random(projectileVelo[1], corpseVelo[1] + projectileVelo[1])]
+        temp.duration = _random(0.3, 1)
+        temp.R = _random(0, 255)
+        temp.G = _random(0, 255)
+        temp.B = _random(0, 255)
+
+        particles.append(temp)
 #---------------------------------
 class Circle:
     def __init__(self):
         self.pos = [0, 0]
-        self.pos[0] = random.uniform(0.3, 0.7) * height
-        self.pos[1] = random.uniform(0.3, 0.7) * width
+        self.pos[0] = _random(0.3, 0.7) * height
+        self.pos[1] = _random(0.3, 0.7) * width
 
-        self.velocity = [random.uniform(0, 10) - 5, random.uniform(0, 10) - 5]
+        self.velocity = [_random(0, 10) - 5, _random(0, 10) - 5]
 #---------------------------------
 def onCollision():
     global circles
@@ -62,11 +87,37 @@ def moveNDraw(obj, objSize):
         onCollision()
         #do something about velocity
 #---------------------------------
+def particleMover(obj, objSize):
+    obj.pos[0] = obj.pos[0] + obj.velocity[0] * (60 / framerate)
+    obj.pos[1] = obj.pos[1] + obj.velocity[1] * (60 / framerate)
+    pygame.draw.circle(screen, (obj.R, obj.G, obj.B), obj.pos, objSize)
+    if(obj.timer > obj.duration):
+        particles.remove(obj)
+#---------------------------------
+def _random(x, y):
+    return random.uniform(x, y)
+#---------------------------------
 
 circles = []
 circles.append(createCircle())
 
 while 1:
+    for circle in circles:
+        for circle2 in circles:
+            if circle != circle2:
+                x = circle.pos[0] - circle2.pos[0]
+                y = circle.pos[1] - circle2.pos[1]
+                lenghtSqrd = x * x + y * y
+                if circleSizeSqrd >= lenghtSqrd:
+                    createCorpse(circle.pos, circle.velocity, circle2.velocity)
+                    createCorpse(circle2.pos, circle2.velocity, circle.velocity)
+
+                    circles.remove(circle)
+                    circles.remove(circle2)
+
+                    if(len(circles) == 0):
+                        circles.append(createCircle())
+    
     screen.fill((50, 50, 50))
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -81,18 +132,9 @@ while 1:
 
     for circle in circles:
         moveNDraw(circle, circleSize)
+
+    for particle in particles:
+        particleMover(particle, 3)
             
     pygame.display.flip()
     clock.tick(framerate)
-    
-    for circle in circles:
-        for circle2 in circles:
-            if circle != circle2:
-                x = circle.pos[0] - circle2.pos[0]
-                y = circle.pos[1] - circle2.pos[1]
-                lenghtSqrd = x * x + y * y
-                if circleSizeSqrd >= lenghtSqrd:
-                    circles.remove(circle)
-                    circles.remove(circle2)
-                    if(len(circles) == 0):
-                        circles.append(createCircle())
