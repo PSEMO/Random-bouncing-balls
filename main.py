@@ -1,5 +1,6 @@
 import pygame
 import random
+import math
 from sys import exit
 
 height = 1500
@@ -11,7 +12,7 @@ pygame.display.set_caption("PSEMO's Game")
 
 clock = pygame.time.Clock()
 
-circleSize = 20
+circleSize = 15
 circleSizeSqrd = circleSize * circleSize * 4
 
 framerate = 150
@@ -30,13 +31,13 @@ class Particle:
 #---------------------------------
 def createCorpse(corpsePos, corpseVelo, projectileVelo):
     x = 0
-    while x < 20:
+    while x < circleSize * 3:
         x += 1
         temp = Particle()
-        temp.pos = list(corpsePos)
+        temp.pos = list(givePosInCircle(list(corpsePos), circleSize))
         temp.velocity = [_random(projectileVelo[0], corpseVelo[0] + projectileVelo[0]),
                          _random(projectileVelo[1], corpseVelo[1] + projectileVelo[1])]
-        temp.duration = _random(0.3, 1)
+        temp.duration = _random(500, 1250)
         temp.R = _random(0, 255)
         temp.G = _random(0, 255)
         temp.B = _random(0, 255)
@@ -87,9 +88,10 @@ def moveNDraw(obj, objSize):
         onCollision()
         #do something about velocity
 #---------------------------------
-def particleMover(obj, objSize):
-    obj.pos[0] = obj.pos[0] + obj.velocity[0] * (60 / framerate)
-    obj.pos[1] = obj.pos[1] + obj.velocity[1] * (60 / framerate)
+def particleMover(obj, objSize, ms):
+    obj.timer = obj.timer + ms
+    obj.pos[0] = obj.pos[0] + (obj.velocity[0] * (60 / framerate)) * ((obj.duration - obj.timer) / obj.duration)
+    obj.pos[1] = obj.pos[1] + (obj.velocity[1] * (60 / framerate)) * ((obj.duration - obj.timer) / obj.duration)
     pygame.draw.circle(screen, (obj.R, obj.G, obj.B), obj.pos, objSize)
     if(obj.timer > obj.duration):
         particles.remove(obj)
@@ -97,11 +99,20 @@ def particleMover(obj, objSize):
 def _random(x, y):
     return random.uniform(x, y)
 #---------------------------------
+def givePosInCircle(pos, R):
+    r = R * math.sqrt(_random(0, 1))
+    theta = _random(0, 1) * 2 * math.pi
+    x = pos[0] + r * math.cos(theta)
+    y = pos[1] + r * math.sin(theta)
+    return[x, y]
+#---------------------------------
 
 circles = []
 circles.append(createCircle())
 
 while 1:
+    ms = clock.tick(framerate)
+
     for circle in circles:
         for circle2 in circles:
             if circle != circle2:
@@ -134,7 +145,6 @@ while 1:
         moveNDraw(circle, circleSize)
 
     for particle in particles:
-        particleMover(particle, 3)
+        particleMover(particle, 2, ms)
             
     pygame.display.flip()
-    clock.tick(framerate)
