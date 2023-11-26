@@ -7,18 +7,32 @@ height = 1900
 width = 1030
 
 pygame.init()
+pygame.mixer.init()
+
 screen = pygame.display.set_mode((height, width))
 pygame.display.set_caption("PSEMO's Game")
 
 clock = pygame.time.Clock()
 
-circleSize = 15
+circleSize = 10
 circleSizeSqrd = circleSize * circleSize * 4
 
 framerate = 150
 
 particles = []
 
+boomSound = pygame.mixer.Sound("boom.mp3")
+
+#---------------------------------
+def playSong():
+    pygame.mixer.music.load("song.mp3")
+    pygame.mixer.music.set_volume(0.35)
+    pygame.mixer.music.play(-1)
+#---------------------------------
+def playBoom(loudness):
+    boomSound.set_volume(loudness)
+    pygame.mixer.Sound.play(boomSound)
+#---------------------------------
 class Particle:
     def __init__(self):
         self.pos = [0, 0]
@@ -54,8 +68,8 @@ class Circle:
 #---------------------------------
 def onCollision():
     global circles
-    circles.append(createCircle())
-    len(circles)
+    for x in range(1):
+        circles.append(createCircle())
 #---------------------------------
 def createCircle():
     circle = Circle()
@@ -106,13 +120,28 @@ def givePosInCircle(pos, R):
     y = pos[1] + r * math.sin(theta)
     return[x, y]
 #---------------------------------
+def draw_text(surface, text, size, color, x, y, relative):
+    font = pygame.font.Font(pygame.font.get_default_font(), size)
+    text_surf = font.render(str(text), True, color)
+    text_rect = text_surf.get_rect()
+
+    if(relative == 'center'):
+        text_rect.center = (x, y)
+    
+    surface.blit(text_surf, text_rect)
+#---------------------------------
 
 circles = []
-circles.append(createCircle())
+maxCount = 0
 
+playSong()
+
+#Update()
 while 1:
+    #count the time frame took and assign it to ms
     ms = clock.tick(framerate)
 
+    #detect collisions, delete collided circles, play sound effect and create corpse
     for circle in circles:
         for circle2 in circles:
             if circle != circle2:
@@ -123,13 +152,24 @@ while 1:
                     createCorpse(circle.pos, circle.velocity, circle2.velocity)
                     createCorpse(circle2.pos, circle2.velocity, circle.velocity)
 
-                    circles.remove(circle)
-                    circles.remove(circle2)
+                    speedRatio = ((circle.velocity[0] - circle2.velocity[0]) + (circle.velocity[1] - circle2.velocity[1])) / 25
+                    speedRatio = speedRatio + 0.2 #max speed dif is 20 therefor code in the upper maxes out at 0.8.
+                    #I do that to make sound between 0.2 - 1.0
+                    if speedRatio < 0: speedRatio = speedRatio * -1
+                    playBoom(speedRatio)
+
+                    if circles.__contains__(circle):
+                        circles.remove(circle)
+                    if circles.__contains__(circle2):
+                        circles.remove(circle2)
 
                     if(len(circles) == 0):
                         circles.append(createCircle())
     
+    #resets screen
     screen.fill((50, 50, 50))
+    
+    #detect events including inputs
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -140,11 +180,19 @@ while 1:
             if event.key == pygame.K_0:
                     for circle in circles:
                         circles.remove(circle)
-
+    
+    #move and draw every circle
     for circle in circles:
         moveNDraw(circle, circleSize)
-
+    
+    #move and draw every particle
     for particle in particles:
         particleMover(particle, 2, ms)
-            
+    
+    #renders text
+    if True:
+        maxCount = max(maxCount, len(circles))
+        draw_text(screen, 'Max: ' + str(maxCount), 32, (255, 255, 255), height / 2, width / 2 - 16, 'center')
+        draw_text(screen, 'Count: ' + str(len(circles)), 32, (255, 255, 255), height / 2, width / 2 + 16, 'center')
+
     pygame.display.flip()
