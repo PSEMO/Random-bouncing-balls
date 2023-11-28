@@ -1,6 +1,7 @@
 import pygame
 import random
 import math
+import haggis
 from sys import exit
 
 height = 1900
@@ -14,6 +15,7 @@ pygame.display.set_caption("PSEMO's Game")
 
 clock = pygame.time.Clock()
 
+mcharSize = 15
 circleSize = 10
 circleSizeSqrd = circleSize * circleSize * 4
 
@@ -23,6 +25,10 @@ particles = []
 
 boomSound = pygame.mixer.Sound("boom.mp3")
 
+#---------------------------------
+class char:
+    def __init__(self) -> None:
+        self.pos = [height / 2, width / 2]
 #---------------------------------
 def playSong():
     pygame.mixer.music.load("song.mp3")
@@ -61,14 +67,25 @@ def createCorpse(corpsePos, corpseVelo, projectileVelo):
 class Circle:
     def __init__(self):
         self.pos = [0, 0]
-        self.pos[0] = _random(0.3, 0.7) * height
-        self.pos[1] = _random(0.3, 0.7) * width
 
+        if(_random(0, 1) > 0.5):
+            self.pos[0] = _random(0.1, 0.25) * height
+        else:
+            self.pos[0] = _random(0.75, 0.9) * height
+
+        if(_random(0, 1) > 0.5):
+            self.pos[1] = _random(0.1, 0.25) * width
+        else:
+            self.pos[1] = _random(0.75, 0.9) * width
+
+        self.R = 200
+        self.G = 0
+        self.B = 0
         self.velocity = [_random(0, 10) - 5, _random(0, 10) - 5]
 #---------------------------------
 def onCollision():
     global circles
-    for x in range(1):
+    for x in range(3):
         circles.append(createCircle())
 #---------------------------------
 def createCircle():
@@ -78,7 +95,7 @@ def createCircle():
 def moveNDraw(obj, objSize):
     obj.pos[0] = obj.pos[0] + obj.velocity[0] * (60 / framerate)
     obj.pos[1] = obj.pos[1] + obj.velocity[1] * (60 / framerate)
-    pygame.draw.circle(screen, (200, 0, 0), obj.pos, objSize)
+    pygame.draw.circle(screen, (obj.R, obj.G, obj.B), obj.pos, objSize)
     
     if obj.pos[0] + objSize > height:
         obj.pos[0] = height - objSize
@@ -130,11 +147,24 @@ def draw_text(surface, text, size, color, x, y, relative):
     
     surface.blit(text_surf, text_rect)
 #---------------------------------
+def distanceCalculate(firstPos, secondPos):
+    x = firstPos[0] - secondPos[0]
+    x = x * x
+    y = firstPos[1] - secondPos[1]
+    y = y * y
+    return math.sqrt(x + y)
+#---------------------------------
+def similarityVectors(a, b):
+    similarity = (a[0] * b[0] + a[1] * b[1]) / max(a[0] * a[0] + a[1] * a[1], b[0] * b[0] + b[1] * b[1])
+    return similarity
+#---------------------------------
 
 circles = []
 maxCount = 0
 
-playSong()
+MChar = char()
+
+#playSong()
 
 #Update()
 while 1:
@@ -165,10 +195,77 @@ while 1:
 
                     if(len(circles) == 0):
                         circles.append(createCircle())
-    
+
     #resets screen
     screen.fill((50, 50, 50))
     
+    #code for MChar
+    if True:
+        if len(circles) > 0:
+            MinDist = height + width
+            closestCircle = Circle()
+            
+            for circle in circles:
+                currentDist = distanceCalculate(circle.pos, MChar.pos)
+                circle.B = 0
+                if currentDist < MinDist:
+                    closestCircle = circle
+                    MinDist = currentDist
+
+            targetPos = closestCircle.pos.copy()
+            targetVelocity = closestCircle.velocity.copy()
+            
+            closestCircle.B = 200
+            if distanceCalculate(MChar.pos, [height * 0.7, width * 0.7]) < MinDist:
+                MinDist = distanceCalculate(MChar.pos, [height * 0.7, width * 0.7])
+                targetPos = [height * 0.7, width * 0.7]
+                targetVelocity = [-1, 0.001]
+                closestCircle.B = 0
+                pygame.draw.circle(screen, (0, 0, 255), targetPos, 10)
+            if distanceCalculate(MChar.pos, [height * 0.7, width * 0.3]) < MinDist:
+                MinDist = distanceCalculate(MChar.pos, [height * 0.7, width * 0.3])
+                targetPos = [height * 0.7, width * 0.3]
+                targetVelocity = [-1, 0.001]
+                closestCircle.B = 0
+                pygame.draw.circle(screen, (0, 0, 255), targetPos, 10)
+            if distanceCalculate(MChar.pos, [height * 0.3, width * 0.7]) < MinDist:
+                MinDist = distanceCalculate(MChar.pos, [height * 0.3, width * 0.7])
+                targetPos = [height * 0.3, width * 0.7]
+                targetVelocity = [1, 0.001]
+                closestCircle.B = 0
+                pygame.draw.circle(screen, (0, 0, 255), targetPos, 10)
+            if distanceCalculate(MChar.pos, [height * 0.3, width * 0.3]) < MinDist:
+                MinDist = distanceCalculate(MChar.pos, [height * 0.3, width * 0.3])
+                targetPos = [height * 0.3, width * 0.3]
+                targetVelocity = [1, 0.001]
+                closestCircle.B = 0
+                pygame.draw.circle(screen, (0, 0, 255), targetPos, 10)
+
+            direction = [MChar.pos[0] - targetPos[0], MChar.pos[1] - targetPos[1]]
+            dirDis = distanceCalculate(direction, [0, 0])
+            direction = [direction[0] / dirDis, direction[1] / dirDis]
+            
+            normalizedVelocity = [0, 0]
+            if targetVelocity[0] != 0:
+                normalizedVelocity = [targetVelocity[0] / distanceCalculate(targetVelocity, [0, 0]),
+                                    targetVelocity[1] / distanceCalculate(targetVelocity, [0, 0])]
+                
+            if similarityVectors(normalizedVelocity, direction) > 0.85:
+                plus90Degrees = [normalizedVelocity[1], normalizedVelocity[0] * -1]
+                minus90Degrees = [normalizedVelocity[1] * -1, normalizedVelocity[0]]
+                if(similarityVectors(direction, plus90Degrees) > similarityVectors(direction, minus90Degrees)):
+                    MChar.pos = [MChar.pos[0] + plus90Degrees[0], MChar.pos[1] + plus90Degrees[1]]
+                else:
+                    MChar.pos = [MChar.pos[0] + minus90Degrees[0], MChar.pos[1] + minus90Degrees[1]]
+            else:
+                MChar.pos = [MChar.pos[0] + direction[0], MChar.pos[1] + direction[1]]
+                
+        if MChar.pos[0] > height * 0.666666: MChar.pos[0] = height * 0.66666
+        if MChar.pos[0] < height * 0.333333: MChar.pos[0] = height * 0.33333
+        if MChar.pos[1] > width * 0.666666: MChar.pos[1] = width * 0.66666
+        if MChar.pos[1] < width * 0.333333: MChar.pos[1] = width * 0.33333
+        pygame.draw.circle(screen, (0, 0, 0), MChar.pos, mcharSize)
+
     #detect events including inputs
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -192,7 +289,7 @@ while 1:
     #renders text
     if True:
         maxCount = max(maxCount, len(circles))
-        draw_text(screen, 'Max: ' + str(maxCount), 32, (255, 255, 255), height / 2, width / 2 - 16, 'center')
-        draw_text(screen, 'Count: ' + str(len(circles)), 32, (255, 255, 255), height / 2, width / 2 + 16, 'center')
+        draw_text(screen, 'Max: ' + str(maxCount), 40, (255, 255, 255), height / 2, 45 - 20, 'center')
+        draw_text(screen, 'Count: ' + str(len(circles)), 40, (255, 255, 255), height / 2, 45 + 20, 'center')
 
     pygame.display.flip()
